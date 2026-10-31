@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PowerGuard | Electricity Theft Reporting &amp; Vigilance Portal</title>
+    <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+
+    <!-- ===================================================================== -->
+    <!-- 1. LOGIN & REGISTRATION SCREEN (CITIZEN, VIGILANCE OFFICER, ADMIN)     -->
+    <!-- ===================================================================== -->
+    <div id="login-screen" class="login-wrapper">
+        <div class="auth-shell">
+            <div class="auth-brand-header">
+                <div class="auth-brand-logo">&#9889;</div>
+                <h1>PowerGuard Vigilance</h1>
+                <p>Electricity Theft Reporting &amp; Investigation Portal</p>
+            </div>
+
+            <div class="login-card">
+                <h2 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 0.35rem; text-align: center;" id="auth-card-title">
+                    Sign In to Portal
+                </h2>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 1.25rem; text-align: center;" id="auth-card-subtitle">
+                    Select your portal role and enter your credentials
+                </p>
+
+                <!-- Role Switcher Tabs -->
+                <div class="role-selector-tabs">
+                    <button type="button" class="role-tab-btn active" id="login-tab-CITIZEN" onclick="selectLoginRole('CITIZEN')">
+                        &#128100; Citizen
+                    </button>
+                    <button type="button" class="role-tab-btn" id="login-tab-OFFICER" onclick="selectLoginRole('OFFICER')">
+                        &#128110; Officer
+                    </button>
+                    <button type="button" class="role-tab-btn" id="login-tab-ADMIN" onclick="selectLoginRole('ADMIN')">
+                        &#128737; Admin
+                    </button>
+                </div>
+
+                <!-- Standard Login Form -->
+                <form id="login-form" onsubmit="handleLoginSubmit(event)">
+                    <div class="form-group">
+                        <label for="login-username">Username <span class="req">*</span></label>
+                        <input type="text" id="login-username" required placeholder="Enter your username" autocomplete="username" />
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password">Password <span class="req">*</span></label>
+                        <input type="password" id="login-password" required placeholder="Enter your password" autocomplete="current-password" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.4rem;" id="login-submit-btn">
+                        &#128274; Sign In as Citizen
+                    </button>
+                </form>
+
+                <!-- Citizen Registration Form (Toggled for New Citizens) -->
+                <form id="register-form" onsubmit="handleRegisterSubmit(event)" style="display: none;">
+                    <div class="form-group">
+                        <label for="reg-fullname">Full Name <span class="req">*</span></label>
+                        <input type="text" id="reg-fullname" required placeholder="Enter your full name" />
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="reg-username">Username <span class="req">*</span></label>
+                            <input type="text" id="reg-username" required placeholder="Choose a username" />
+                        </div>
+                        <div class="form-group">
+                            <label for="reg-password">Password <span class="req">*</span></label>
+                            <input type="password" id="reg-password" required placeholder="Minimum 4 characters" />
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="reg-phone">Contact Phone Number</label>
+                        <input type="tel" id="reg-phone" placeholder="Enter mobile number" />
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 0.25rem;">
+                        &#10024; Register &amp; Sign In
+                    </button>
+                </form>
+
+                <div id="citizen-register-toggle-box" style="text-align: center; margin-top: 1.15rem; padding-top: 1rem; border-top: 1px solid var(--border-highlight);">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="toggleCitizenRegisterMode()" id="toggle-reg-btn">
+                        New Citizen? Create an Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- 2. AUTHENTICATED APPLICATION SHELL (WIDESCREEN LAPTOP)                 -->
+    <!-- ===================================================================== -->
+    <div id="app-shell" style="display: none;">
+        <!-- Top Header -->
+        <header class="top-header">
+            <div class="header-inner">
+                <div class="brand">
+                    <div class="brand-icon" title="PowerGuard Vigilance">&#9889;</div>
+                    <div class="brand-text">
+                        <h1>PowerGuard Vigilance</h1>
+                        <p id="header-role-subtitle">Electricity Theft Reporting &amp; Investigation Portal</p>
+                    </div>
+                </div>
+
+                <!-- Role-Specific Navigation Tabs -->
+                <nav class="nav-tabs" role="tablist">
+                    <!-- CITIZEN ONLY: Make Report -->
+                    <button class="nav-tab" id="nav-btn-report" data-tab="report" onclick="switchTab('report')">
+                        <span>&#128680;</span> Make Theft Report
+                    </button>
+
+                    <!-- OFFICER ONLY: Officer Investigation Desk -->
+                    <button class="nav-tab" id="nav-btn-officer" data-tab="officer" onclick="switchTab('officer')">
+                        <span>&#128110;</span> Investigation Desk
+                        <span class="badge badge-UNDER_INVESTIGATION" id="officer-assigned-pill" style="padding: 0.05rem 0.45rem;">0</span>
+                    </button>
+
+                    <!-- ADMIN ONLY: Admin Officer Assignment Center -->
+                    <button class="nav-tab" id="nav-btn-admin" data-tab="admin" onclick="switchTab('admin')">
+                        <span>&#128737;</span> Officer Assignment Center
+                        <span class="badge badge-SUBMITTED" id="admin-unassigned-pill" style="padding: 0.05rem 0.45rem;">0</span>
+                    </button>
+
+                    <!-- ALL ROLES: View & Track Reports -->
+                    <button class="nav-tab" id="nav-btn-track" data-tab="track" onclick="switchTab('track')">
+                        <span>&#128269;</span> View &amp; Track Reports
+                    </button>
+                </nav>
+
+                <!-- Active User Info & Sign Out -->
+                <div class="user-session-bar">
+                    <div style="text-align: right;">
+                        <div style="font-size: 0.88rem; font-weight: 700;" id="session-user-name">User</div>
+                        <div>
+                            <span class="badge role-pill-CITIZEN" id="session-role-badge">Citizen</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-secondary btn-sm" onclick="logoutAndShowLogin()">
+                        Sign Out
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-container">
+            <!-- Live Grid Vigilance KPI Banner (Shown for Officer & Admin) -->
+            <section class="kpi-grid" id="staff-kpi-banner" aria-label="Grid Vigilance Summary">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Registered Reports</div>
+                    <div class="kpi-value" id="kpi-total">0</div>
+                    <div class="kpi-sub">Citizen theft reports logged</div>
+                </div>
+                <div class="kpi-card kpi-blue">
+                    <div class="kpi-label">Pending Officer Assignment</div>
+                    <div class="kpi-value" id="kpi-unassigned">0</div>
+                    <div class="kpi-sub">Awaiting assignment by Administrator</div>
+                </div>
+                <div class="kpi-card kpi-purple">
+                    <div class="kpi-label">Active Investigations</div>
+                    <div class="kpi-value" id="kpi-active">0</div>
+                    <div class="kpi-sub">Assigned to Field Vigilance Officers</div>
+                </div>
+                <div class="kpi-card kpi-green">
+                    <div class="kpi-label">Resolved Cases</div>
+                    <div class="kpi-value" id="kpi-resolved">0</div>
+                    <div class="kpi-sub"><span id="kpi-dismissed">0</span> dismissed after inspection</div>
+                </div>
+            </section>
+
+            <!-- ================================================================= -->
+            <!-- TAB 1: CITIZEN REPORTING PORTAL (CITIZEN ROLE ONLY)               -->
+            <!-- ================================================================= -->
+            <section id="tab-report" class="tab-section">
+                <div class="portal-layout">
+                    <!-- Left Column: Reporting Form -->
+                    <div class="card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">&#9889; File an Electricity Theft Complaint</div>
+                                <div class="card-subtitle">Submit incident details and photographic evidence for vigilance inspection</div>
+                            </div>
+                        </div>
+
+                        <form id="report-form" onsubmit="submitTheftReport(event)">
+                            <div class="form-grid" style="margin-bottom: 1.15rem; padding: 1.25rem; background: rgba(56, 189, 248, 0.04); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: var(--radius-sm);">
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="reporterName">Reporter Full Name <span class="req">*</span></label>
+                                    <input type="text" id="reporterName" required placeholder="Enter your full name" />
+                                </div>
+                                <div class="form-group" style="margin-bottom: 0;">
+                                    <label for="reporterPhone">Contact Mobile Number <span class="req">*</span></label>
+                                    <input type="tel" id="reporterPhone" required placeholder="Enter mobile number" />
+                                </div>
+                                <div class="form-group full-width" style="margin-top: 0.85rem; margin-bottom: 0;">
+                                    <label for="reporterEmail">Email Address (Optional)</label>
+                                    <input type="email" id="reporterEmail" placeholder="Enter email address" />
+                                </div>
+                            </div>
+
+                            <div class="form-grid">
+                                <div class="form-group full-width">
+                                    <label for="title">Incident Headline / Summary <span class="req">*</span></label>
+                                    <input type="text" id="title" required placeholder="Enter a clear summary of the suspected electricity theft" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="category">Theft Category <span class="req">*</span></label>
+                                    <select id="category" required>
+                                        <option value="DIRECT_HOOKING">Direct Line Hooking (Kundi)</option>
+                                        <option value="METER_TAMPERING">Meter Tampering / Shunt Bypass</option>
+                                        <option value="ILLEGAL_SUB_METERING">Illegal Commercial Sub-Metering</option>
+                                        <option value="TRANSFORMER_TAP">Unauthorized Transformer Tap</option>
+                                        <option value="SEAL_BROKEN">Broken / Forged Meter Seal</option>
+                                        <option value="UNDERGROUND_CABLE_TAP">Underground Service Cable Splicing</option>
+                                        <option value="OTHER">Other Suspicious Consumption</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="severity">Severity / Hazard Level <span class="req">*</span></label>
+                                    <select id="severity" required>
+                                        <option value="MEDIUM">Medium</option>
+                                        <option value="HIGH" selected>High</option>
+                                        <option value="CRITICAL">Critical</option>
+                                        <option value="LOW">Low</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="address">Exact Premises / Street Address <span class="req">*</span></label>
+                                    <input type="text" id="address" required placeholder="Building No., Street Name, Locality" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="landmark">Nearest Electric Pole / Landmark <span class="req">*</span></label>
+                                    <input type="text" id="landmark" required placeholder="Nearest pole number or landmark" />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="suspectConsumerNumber">Suspect Consumer / Meter / Pole ID (Optional)</label>
+                                    <input type="text" id="suspectConsumerNumber" placeholder="Consumer ID or Meter Number" />
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="gpsCoordinates">GPS Coordinates (Optional)</label>
+                                    <div class="input-with-btn">
+                                        <input type="text" id="gpsCoordinates" placeholder="Latitude, Longitude" />
+                                        <button type="button" class="btn btn-secondary" onclick="detectGpsLocation()">
+                                            &#128205; Detect Location
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label for="description">Detailed Observation &amp; Timing of Theft <span class="req">*</span></label>
+                                    <textarea id="description" required placeholder="Describe how electricity is being tapped and when it occurs..."></textarea>
+                                </div>
+
+                                <div class="form-group full-width">
+                                    <label>Photographic Evidence (Optional)</label>
+                                    <div class="evidence-dropzone" onclick="document.getElementById('evidenceFile').click()">
+                                        <input type="file" id="evidenceFile" accept="image/*" style="display: none;" onchange="handleEvidenceUpload(event)" />
+                                        <div id="evidence-prompt">
+                                            <strong>&#128247; Click to attach photo of illegal hooking, bypassed meter, or pole ID</strong>
+                                            <p style="font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.25rem;">
+                                                Attached evidence will be reviewed by the Administrator and assigned Vigilance Officer
+                                            </p>
+                                        </div>
+                                        <img id="evidence-preview" class="evidence-preview-img" style="display: none;" alt="Evidence Preview" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.75rem;">
+                                <button type="reset" class="btn btn-secondary" onclick="clearEvidencePreview()">Clear Form</button>
+                                <button type="submit" class="btn btn-primary" id="submit-report-btn">
+                                    &#128680; Submit Report
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Right Column: Citizen's Submitted Reports -->
+                    <div>
+                        <div class="card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">&#128203; My Submitted Reports</div>
+                                    <div class="card-subtitle">Track officer assignment and investigation updates for your reports</div>
+                                </div>
+                            </div>
+                            <div id="citizen-my-reports" style="display: flex; flex-direction: column; gap: 0.85rem;">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================================================================= -->
+            <!-- TAB 2: VIEW & TRACK REPORTS (AVAILABLE TO CITIZEN, OFFICER, ADMIN)-->
+            <!-- ================================================================= -->
+            <section id="tab-track" class="tab-section">
+                <div class="card">
+                    <div style="text-align: center; max-width: 720px; margin: 0 auto 1.35rem auto;">
+                        <h2 style="font-size: 1.4rem; margin-bottom: 0.35rem;">&#128269; Track Electricity Theft Report Status</h2>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary);">
+                            Enter your Reference ID below to view officer assignment and chronological investigation progress.
+                        </p>
+                    </div>
+
+                    <form class="tracker-search-box" onsubmit="handleTrackSearch(event)">
+                        <input type="text" id="track-input" placeholder="Enter Reference ID (e.g., PG-2026-XXXX)" required style="font-family: 'Consolas', monospace; font-size: 1rem; text-transform: uppercase;" />
+                        <button type="submit" class="btn btn-primary">&#128270; Track Status</button>
+                    </form>
+
+                    <div class="quick-ref-pills" id="quick-ref-pills"></div>
+
+                    <div id="tracking-result-container" style="display: none; margin-top: 1.5rem; border-top: 1px solid var(--border-highlight); padding-top: 1.5rem;"></div>
+                </div>
+            </section>
+
+            <!-- ================================================================= -->
+            <!-- TAB 3: VIGILANCE OFFICER INVESTIGATION DESK (OFFICER ROLE ONLY)   -->
+            <!-- ================================================================= -->
+            <section id="tab-officer" class="tab-section">
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">&#128110; Vigilance Officer Investigation Desk</div>
+                            <div class="card-subtitle" id="officer-desk-subtitle">
+                                Reports assigned to you by the Administrator for site inspection and investigation
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                            <label for="officer-scope-filter" style="margin: 0; font-size: 0.82rem;">View Scope:</label>
+                            <select id="officer-scope-filter" onchange="renderOfficerTable()" style="width: auto; padding: 0.45rem 0.85rem; font-size: 0.84rem;">
+                                <option value="MINE">Assigned to Me</option>
+                                <option value="ALL">All Assigned Cases</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ref ID</th>
+                                    <th>Complaint &amp; Category</th>
+                                    <th>Address &amp; Landmark</th>
+                                    <th>Severity</th>
+                                    <th>Investigation Status</th>
+                                    <th>Assigned Officer</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="officer-reports-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ================================================================= -->
+            <!-- TAB 4: CENTRAL ADMIN ASSIGNMENT CENTER (ADMIN ROLE ONLY)          -->
+            <!-- ================================================================= -->
+            <section id="tab-admin" class="tab-section">
+                <!-- Visual Breakdown Charts -->
+                <div class="analytics-grid">
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header">
+                            <div class="card-title">&#128202; Theft Category Breakdown</div>
+                        </div>
+                        <div id="chart-categories"></div>
+                    </div>
+                    <div class="card" style="margin-bottom: 0;">
+                        <div class="card-header">
+                            <div class="card-title">&#128200; Case Status Overview</div>
+                        </div>
+                        <div id="chart-statuses"></div>
+                    </div>
+                </div>
+
+                <!-- Admin Officer Assignment Table Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div>
+                            <div class="card-title">&#128737; Administrator — Assign Citizen Reports to Vigilance Officers</div>
+                            <div class="card-subtitle">
+                                Review incoming citizen complaints and assign each report to a Field Vigilance Officer for investigation
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                            <button class="btn btn-secondary btn-sm" onclick="exportReportsCsv()">&#128190; Export CSV</button>
+                        </div>
+                    </div>
+
+                    <!-- Filters -->
+                    <div class="filter-bar">
+                        <input type="text" id="filter-search" placeholder="Search by Reference ID, address, consumer #, or officer..." oninput="loadAllReports()" />
+                        <select id="filter-status" onchange="loadAllReports()">
+                            <option value="ALL">All Statuses</option>
+                            <option value="UNASSIGNED">Unassigned (Needs Officer)</option>
+                            <option value="SUBMITTED">Submitted</option>
+                            <option value="UNDER_INVESTIGATION">Assigned &amp; Under Investigation</option>
+                            <option value="TEAM_DISPATCHED">Field Team Dispatched</option>
+                            <option value="RESOLVED_CONFIRMED">Resolved (Confirmed)</option>
+                            <option value="DISMISSED">Dismissed</option>
+                        </select>
+                        <select id="filter-severity" onchange="loadAllReports()">
+                            <option value="ALL">All Severities</option>
+                            <option value="CRITICAL">Critical</option>
+                            <option value="HIGH">High</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="LOW">Low</option>
+                        </select>
+                        <button class="btn btn-secondary" onclick="resetFilters()">Clear</button>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Ref ID</th>
+                                    <th>Citizen Complaint &amp; Category</th>
+                                    <th>Address &amp; Landmark</th>
+                                    <th>Severity</th>
+                                    <th>Current Status</th>
+                                    <th>Assigned Vigilance Officer</th>
+                                    <th>Admin Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-reports-tbody">
+                                <!-- Populated dynamically -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 1: CITIZEN SUBMISSION SUCCESS                                   -->
+    <!-- ===================================================================== -->
+    <div class="modal-backdrop" id="success-modal">
+        <div class="modal-content" style="max-width: 520px; text-align: center;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;">&#9989;</div>
+            <h2 style="font-size: 1.35rem; margin-bottom: 0.4rem;">Complaint Registered Successfully</h2>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 1.25rem;">
+                Your report has been forwarded to the Administrator for assignment to a Vigilance Officer. Save your Reference ID:
+            </p>
+            <div style="background: var(--bg-input); border: 2px dashed var(--accent-amber); padding: 1rem; border-radius: 10px; margin-bottom: 1.25rem;">
+                <div style="font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase;">Official Reference ID</div>
+                <div id="modal-created-ref" style="font-size: 1.75rem; font-weight: 800; font-family: 'Consolas', monospace; color: var(--accent-amber); margin-top: 0.2rem;">
+                    PG-2026-0000
+                </div>
+            </div>
+            <div style="display: flex; gap: 0.75rem; justify-content: center; flex-wrap: wrap;">
+                <button class="btn btn-secondary" onclick="copyCreatedRefId()">&#128203; Copy Reference ID</button>
+                <button class="btn btn-primary" onclick="trackCreatedReportNow()">&#128269; Track Status</button>
+                <button class="btn btn-secondary" onclick="closeModal('success-modal')">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===================================================================== -->
+    <!-- MODAL 2: ADMIN OFFICER ASSIGNMENT & OFFICER INVESTIGATION MODAL       -->
+    <!-- ===================================================================== -->
+    <div class="modal-backdrop" id="inspect-modal">
+        <div class="modal-content">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">
+                        <span>&#128270; Case Dossier:</span>
+                        <span id="ins-ref-id" class="ref-code" style="font-size: 1.1rem;"></span>
+                    </div>
+                    <div class="card-subtitle" id="ins-title"></div>
+                </div>
+                <button class="btn btn-secondary btn-sm" onclick="closeModal('inspect-modal')">&#10005; Close</button>
+            </div>
+
+            <div class="info-kv-grid" id="ins-kv-grid"></div>
+
+            <div style="margin-bottom: 1rem;">
+                <label>Incident Description</label>
+                <div id="ins-description" style="background: var(--bg-input); padding: 0.9rem; border-radius: 8px; border: 1px solid var(--border-color); font-size: 0.9rem;"></div>
+            </div>
+
+            <div id="ins-evidence-box" style="display: none; margin-bottom: 1.25rem;">
+                <label>Attached Photographic Evidence</label>
+                <div style="background: var(--bg-input); padding: 0.75rem; border-radius: 8px; border: 1px solid var(--border-color); text-align: center;">
+                    <img id="ins-evidence-img" src="" alt="Case Evidence" style="max-width: 100%; max-height: 280px; border-radius: 6px;" />
+                </div>
+            </div>
+
+            <!-- PANEL A: ADMIN-ONLY OFFICER ASSIGNMENT FORM -->
+            <form id="admin-assign-form" onsubmit="submitAdminAssignOfficer(event)" style="display: none; background: rgba(168, 85, 247, 0.08); border: 1px solid rgba(168, 85, 247, 0.35); padding: 1.25rem; border-radius: 10px; margin-bottom: 1.25rem;">
+                <h4 style="margin-bottom: 0.35rem; color: #c084fc; font-size: 0.98rem;">
+                    &#128737; Administrator Action: Assign Report to Vigilance Officer
+                </h4>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.9rem;">
+                    Select the Field Vigilance Officer who will investigate this report.
+                </p>
+                <input type="hidden" id="admin-assign-ref-id" />
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="admin-select-officer">Assign Vigilance Officer <span class="req">*</span></label>
+                        <select id="admin-select-officer" required></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="admin-select-severity">Priority / Severity Level</label>
+                        <select id="admin-select-severity">
+                            <option value="LOW">Low Priority</option>
+                            <option value="MEDIUM">Medium Priority</option>
+                            <option value="HIGH">High Priority</option>
+                            <option value="CRITICAL">Critical Priority</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width" style="margin-bottom: 0.5rem;">
+                        <label for="admin-assign-remarks">Assignment Instructions for Officer <span class="req">*</span></label>
+                        <textarea id="admin-assign-remarks" rows="2" required placeholder="Enter inspection instructions for the assigned Vigilance Officer..."></textarea>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="deleteCurrentReport()">
+                        &#128465; Delete Report
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        &#128640; Assign to Officer
+                    </button>
+                </div>
+            </form>
+
+            <!-- PANEL B: OFFICER-ONLY FIELD INVESTIGATION FORM -->
+            <form id="officer-investigate-form" onsubmit="submitOfficerInvestigation(event)" style="display: none; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.35); padding: 1.25rem; border-radius: 10px; margin-bottom: 1.25rem;">
+                <h4 style="margin-bottom: 0.35rem; color: #38bdf8; font-size: 0.98rem;">
+                    &#128110; Vigilance Officer Action: Submit Investigation Findings
+                </h4>
+                <p style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 0.9rem;">
+                    Update the investigation status and enter your field inspection findings.
+                </p>
+                <input type="hidden" id="officer-inv-ref-id" />
+                <div class="form-grid">
+                    <div class="form-group full-width">
+                        <label for="officer-inv-status">Investigation Status <span class="req">*</span></label>
+                        <select id="officer-inv-status" required>
+                            <option value="UNDER_INVESTIGATION">Under Investigation</option>
+                            <option value="TEAM_DISPATCHED">Field Team Dispatched</option>
+                            <option value="RESOLVED_CONFIRMED">Resolved (Theft Confirmed)</option>
+                            <option value="DISMISSED">Dismissed (No Violation Found)</option>
+                        </select>
+                    </div>
+                    <div class="form-group full-width" style="margin-bottom: 0.5rem;">
+                        <label for="officer-inv-notes">Official Field Inspection Findings <span class="req">*</span></label>
+                        <textarea id="officer-inv-notes" rows="3" required placeholder="Enter field inspection findings and actions taken..."></textarea>
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.5rem;">
+                    <button type="submit" class="btn btn-primary">
+                        &#9989; Save Investigation Update
+                    </button>
+                </div>
+            </form>
+
+            <!-- Audit History inside Modal -->
+            <div>
+                <label style="margin-bottom: 0.65rem;">Chronological Investigation &amp; Assignment History</label>
+                <div class="timeline" id="ins-timeline"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <script src="/app.js"></script>
+</body>
+</html>
