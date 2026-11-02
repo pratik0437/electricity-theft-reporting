@@ -16,3 +16,7 @@ out/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Temporary Office lock files
+~$*
+*.tmp
